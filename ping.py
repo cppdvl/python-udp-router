@@ -35,9 +35,9 @@ def uidstr(uid):
 
 def reset_everything(uid):
     uid_names = {}
+    for uid in even_uids:
+        uid_ip_port_mapping.pop(uid, None)
     even_uids.clear()
-    odd_uids.clear()
-    uid_ip_port_mapping.clear()
     uid_last_sequence.clear()
     print(f"Resetting over a new host uid: {uid}")
 
@@ -70,10 +70,11 @@ def printsequence(uid, sequence):
 def process_message(message, addr):
     # Extract UID and convert it
     uid, sequence = struct.unpack('<II', message[:8])
-    if len(message) == 9:
+    if len(message) == 9 and LOOPBACK == True:
         role = "mixer" if uid % 2 == 0 else "peer"
         print(f"Received a test message from {role} : {uidstr(uid)} : {message}")
-        return
+        return;
+
     if LOOPBACK == True:
         if last_uid != uid:
             reset_everything(uid)
@@ -82,8 +83,8 @@ def process_message(message, addr):
         return
 
     uidf = uidstr(uid)
-    if sequence % BLOCKSIZE != 0:
-        print(f"** Received out of sequence message from {uid},{addr} : {sequence} **")
+    #if sequence % BLOCKSIZE != 0:
+    #    print(f"** Received out of sequence message from {uid},{addr} : {sequence} **")
     is_even_user = uid % 2 == 0
     is_new_user = uid not in even_uids and uid not in odd_uids
     if is_new_user and is_even_user:
@@ -96,8 +97,8 @@ def process_message(message, addr):
         print(f"ODDset {odd_uids} / EVENset {even_uids}")
         print(f"UID to IP/PORT: {uid_ip_port_mapping}")
 
-    if sequence > 0 and uid in uid_last_sequence and uid_last_sequence[uid] != sequence - BLOCKSIZE:
-        print(f"{uidf} window: {sequence-BLOCKSIZE} was not received")
+    #if sequence > 0 and uid in uid_last_sequence and uid_last_sequence[uid] != sequence - BLOCKSIZE:
+    #    print(f"{uidf} window: {sequence-BLOCKSIZE} was not received")
 
     uid_last_sequence[uid] = sequence
 
