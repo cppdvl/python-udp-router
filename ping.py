@@ -83,7 +83,7 @@ def process_message(message, addr):
 
     uidf = uidstr(uid)
     if sequence % BLOCKSIZE != 0:
-        print(f"** Received out of sequence message from {uid},{addr}**")
+        print(f"** Received out of sequence message from {uid},{addr} : {sequence} **")
     is_even_user = uid % 2 == 0
     is_new_user = uid not in even_uids and uid not in odd_uids
     if is_new_user and is_even_user:
