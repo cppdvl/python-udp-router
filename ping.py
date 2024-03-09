@@ -78,10 +78,6 @@ def process_message(message, addr):
         if last_uid != uid:
             reset_everything(uid)
         printsequence(uid, sequence)
-        if uid % 2 == 0:
-            bmsg = bytearray(message)
-            bmsg[8:] = bytearray([0] * (len(bmsg) - 8))
-            message = bytes(bmsg)
         loopback_message(message, addr)
         return
 
