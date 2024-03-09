@@ -70,10 +70,18 @@ def printsequence(uid, sequence):
 def process_message(message, addr):
     # Extract UID and convert it
     uid, sequence = struct.unpack('<II', message[:8])
+    if len(message) == 9:
+        role = "mixer" if uid % 2 == 0 else "peer"
+        print(f"Received a test message from {role} : {uidstr(uid)} : {message}")
+        return
     if LOOPBACK == True:
         if last_uid != uid:
             reset_everything(uid)
         printsequence(uid, sequence)
+        if uid % 2 == 0:
+            bmsg = bytearray(message)
+            bmsg[8:] = bytearray([0] * (len(bmsg) - 8))
+            message = bytes(bmsg)
         loopback_message(message, addr)
         return
 
