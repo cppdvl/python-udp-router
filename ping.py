@@ -68,8 +68,45 @@ def printsequence(uid, sequence):
 
 
 def process_message(message, addr):
+
+
+
     # Extract UID and convert it
     uid, sequence = struct.unpack('<II', message[:8])
+
+    # Check if the UID is an streaming command
+    # A streaming command is any UID in the range 0xdeadbee0 to 0xdeadbeef
+
+    if 0xdeadbee0 <= uid <= 0xdeadbeef:
+        #create a dictionary indexing the command like this:
+        # 0xdeadbee0 -> "pause"
+        # 0xdeadbee1 -> "play"
+        # 0xdeadbee2 -> "move"
+        # 0xdeadbee3 -> "ping"
+        # the value should be a lambda function that takes the message and the address as arguments
+        # and returns a tuple of the new message and the new address
+        command_dict = {0xdeadbee0: "pause", 0xdeadbee1 : "play", 0xdeadbee2 : "move", 0xdeadbee3 : "ping"}
+        print(f"Command: {command_dict[uid]}@ {sequence}, from {addr}")
+
+        if uid == 0xdeadbee3:
+            sock.sendto(message, addr)
+            return
+
+        if 0xdeadbee0 <= uid <= 0xdeadbee2:
+            toset = {}
+            for k,v in uid_ip_port_mapping.items():
+                if v == addr:
+                    continue
+                if k in odd_uids or k in even_uids:
+                    toset[k] = v
+            #broadcast the command
+            for v in toset:
+                sock.sendto(message, toset[v])
+
+
+        return
+
+
     if len(message) == 9 and LOOPBACK == True:
         role = "mixer" if uid % 2 == 0 else "peer"
         print(f"Received a test message from {role} : {uidstr(uid)} : {message}")
@@ -111,6 +148,8 @@ while True:
     # Receive messages
     data, addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
     process_message(data, addr)
+
+
 
 
 
