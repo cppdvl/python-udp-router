@@ -30,8 +30,6 @@ command_dict = {
     0xdeadbeef : "remove" #remove this user from uids.
 }
 
-
-
 # Create the socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
@@ -53,13 +51,18 @@ def sendtotarget(target_set, message):
     for target_uid in target_set:
         if target_uid not in uid_ip_port_mapping:
             continue
-        socket.sendto(message, addr)
+        target_addr = uid_ip_port_mapping[target_uid]
+        sock.sendto(message, target_addr)
 
 def roguemode(uid, message):
+    global even_uids
+    global odd_uids
     target_set = (even_uids | odd_uids) - {uid}
     sendtotarget(target_set, message)
 
 def multicast_message(uid, message):
+    global even_uids
+    global odd_uids
     target_set = odd_uids if uid%2 == 0 else even_uids
     sendtotarget(target_set, message)
 
@@ -82,6 +85,8 @@ def printsequence(uid, sequence):
         last_sequence = sequence
 
 def process_in_band_command(uid, sequence, message, addr):
+    global even_uids
+    global odd_uids
     print(f"Command: {command_dict[uid]}@ {sequence}, from {addr}")
 
     if 0xdeadbee0 <= uid <= 0xdeadbee2:
@@ -101,12 +106,13 @@ def process_in_band_command(uid, sequence, message, addr):
         return
 
     if 0xdeadbeef: #an user is waving bye bye
-        k_uids_to_remove = [k_uid for k_uid in uid_ip_port_mapping[k_uid] == addr]
+        k_uids_to_remove = [k_uid for k_uid in uid_ip_port_mapping if uid_ip_port_mapping[k_uid] == addr]
         for k_uid in k_uids_to_remove:
             if k_uid in even_uids:
                 even_uids = even_uids - {k_uid}
             if k_uid in odd_uids:
                 odd_uids = odd_uids - {k_uid}
+            print(f"Removing: {k_uid} : {uid_ip_port_mapping[k_uid]}")
             del uid_ip_port_mapping[k_uid]
 
     return
@@ -160,7 +166,7 @@ def process_message(message, addr):
 
     uid_last_sequence[uid] = sequence
 
-    if len(odd_uids) > 0 and len(even_uids) > 0:
+    if len(odd_uids) > 0 and (len(even_uids) > 0 or ROGUE == True):
         broadcast_message(uid, message)
     else:
         printsequence(uid, sequence)
